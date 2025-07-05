@@ -53,6 +53,7 @@ async function getPharmacyItems(countryCode: countryCodes, source: sources, vers
 
 export function checkBrandIsSeparateTerm(input: string, brand: string): boolean {
     let brandToCheck = brand.toLowerCase();
+    // validations
     brandToCheck = brandToCheck.replace("babē", "babe");
     
     if(["bio", "neb"].includes(brandToCheck)){
