@@ -24,12 +24,14 @@ export async function getBrandsMapping(): Promise<BrandsMapping> {
         if (!brandMap.has(brand1)) {
             brandMap.set(brand1, new Set())
         }
+        brandMap.get(brand1)!.add(brand1);
         brand2Array.forEach((brand2) => {
+            /*
             if (!brandMap.has(brand2)) {
                 brandMap.set(brand2, new Set())
-            }
+            }*/
             brandMap.get(brand1)!.add(brand2)
-            brandMap.get(brand2)!.add(brand1)
+            // brandMap.get(brand2)!.add(brand1)
         })
     })
 
@@ -50,8 +52,38 @@ async function getPharmacyItems(countryCode: countryCodes, source: sources, vers
 }
 
 export function checkBrandIsSeparateTerm(input: string, brand: string): boolean {
+    let brandToCheck = brand.toLowerCase();
+    brandToCheck = brandToCheck.replace("babē", "babe");
+    
+    if(["bio", "neb"].includes(brandToCheck)){
+        return false
+    }
+    
+    let titleArr = input.toLowerCase().split(" ");
+    
+    let inFront = ["rich", "rff", "flex", "ultra", "gum", "beauty", "orto", "free", "112", "kin", "happy"];
+
+    if(inFront.includes(brandToCheck)) {
+        if(titleArr[0]==brandToCheck) {  
+            if(titleArr[0]=="HAPPY") {
+                return true;
+            }            
+            return true;
+        }
+        return false;
+    }
+    
+    let frontOrSecond =  ["heel", "contour", "nero", "rsv"];
+
+    if(frontOrSecond.includes(brandToCheck)) {
+        let firstTwo = titleArr.slice(0, 2);
+        if(firstTwo.includes(brandToCheck)) {
+            return true;
+        }
+        return false;        
+    }
     // Escape any special characters in the brand name for use in a regular expression
-    const escapedBrand = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const escapedBrand = brandToCheck.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
     // Check if the brand is at the beginning or end of the string
     const atBeginningOrEnd = new RegExp(
@@ -70,6 +102,7 @@ export async function assignBrandIfKnown(countryCode: countryCodes, source: sour
     const context = { scope: "assignBrandIfKnown" } as ContextType
 
     const brandsMapping = await getBrandsMapping()
+    // console.log("brandsMapping: ", brandsMapping);
 
     const versionKey = "assignBrandIfKnown"
     let products = await getPharmacyItems(countryCode, source, versionKey, false)
@@ -95,11 +128,14 @@ export async function assignBrandIfKnown(countryCode: countryCodes, source: sour
                 }
             }
         }
-        console.log(`${product.title} -> ${_.uniq(matchedBrands)}`)
+        // console.log(`${product.title} -> ${_.uniq(matchedBrands)}`)
+        matchedBrands.sort();
+        const uniqueMatchedBrands = [...new Set(matchedBrands)];        
+        
+        // console.log("uniqueMatchedBrands: ", uniqueMatchedBrands);
         const sourceId = product.source_id
-        const meta = { matchedBrands }
-        const brand = matchedBrands.length ? matchedBrands[0] : null
-
+        const meta = { uniqueMatchedBrands }
+        const brand = uniqueMatchedBrands.length ? uniqueMatchedBrands[0] : null
         const key = `${source}_${countryCode}_${sourceId}`
         const uuid = stringToHash(key)
 
